@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Navigator</string>
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyCsDHVvnIQWfj8m15gCb3sgXfUUUf4sP0I</string>
+    <string name="title_activity_maps">"Navigator"</string>
+    <string name="title_activity_main">"Navigator"</string>
+    <string name="go_to_next_activity">Go to Next Activity</string>
 </resources>

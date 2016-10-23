@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/my_border"
+    android:layout_weight="1">
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/tv"
+        android:layout_alignBaseline="@+id/btnAdd"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_weight="0.8"
+        android:text="Text Position" />
+
+
+    <Button
+        android:text="+"
+        android:id="@+id/btnAdd"
+        android:layout_alignRight="@+id/tv"
+        android:layout_alignParentRight="true"
+        android:layout_weight="0.2"
+        android:layout_width="35dp"
+        android:layout_height="35dp" />
+
+</RelativeLayout>

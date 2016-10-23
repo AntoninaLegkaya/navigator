@@ -20,6 +20,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -27,19 +28,22 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -60,10 +64,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.navigator.customElements.PositionInfoButton;
+import com.navigator.interfaces.Observer;
+import com.navigator.model.LocationModel;
+import com.navigator.service.LocationService;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 
-public class MainFragment extends Fragment implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
+
+public class MainFragment extends Fragment implements Observer, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         SlidingUpPanelLayout.PanelSlideListener, LocationListener, HeaderAdapter.ItemClickListener {
 
     private static final String ARG_LOCATION = "arg.location";
@@ -78,7 +90,8 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
     private HeaderAdapter mHeaderAdapter;
 
     private LatLng mLocation;
-    private Marker mLocationMarker;
+    private Marker mLocationMarkerA;
+    private Marker mLocationMarkerB;
 
     private SupportMapFragment mMapFragment;
 
@@ -87,6 +100,10 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
 
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
+    private LocationModel mLocationModel;
+
+
+    private ProgressBar mProgress;
 
     public MainFragment() {
     }
@@ -101,9 +118,16 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log.i(TAG, "onCreateView: compose viewGroup fragment_main");
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
+
         Log.i(TAG, "onCreateView: add listView to fragment_main");
         mListView = (LockableRecyclerView) rootView.findViewById(android.R.id.list);
         mListView.setOverScrollMode(ListView.OVER_SCROLL_NEVER);
@@ -112,9 +136,8 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
 
 
-//        int screenWidth = getResources().getDisplayMetrics().widthPixels;
-//        int mapHeight = screenHeight;
-        int mapHeight = getResources().getDimensionPixelSize(R.dimen.map_height);
+        int mapHeight = 0;
+        //getResources().getDimensionPixelSize(R.dimen.map_height);
 
         Log.i(TAG, "onCreateView: Set height sliding Panel: " + mapHeight);
         mSlidingUpPanelLayout.setPanelHeight(mapHeight); // you can use different height here
@@ -125,7 +148,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
         // transparent view at the top of ListView
         Log.i(TAG, "onCreateView: transparent view at the top of RecycleView ");
         mTransparentView = rootView.findViewById(R.id.transparentView);
-        mWhiteSpaceView = rootView.findViewById(R.id.whiteSpaceView);
+//        mWhiteSpaceView = rootView.findViewById(R.id.whiteSpaceView);
         Log.i(TAG, "onCreateView: expand Map ");
         expandMap();
 //        collapseMap();
@@ -138,6 +161,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
             }
         });
 
+
         return rootView;
     }
 
@@ -145,30 +169,32 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        mLocation = getArguments().getParcelable(ARG_LOCATION);
-        if (mLocation == null) {
-            Log.i(TAG, "onActivityCreated: (mLocation == null) Get lastKnowLocation (IsMoveMarker: FALSE)");
-            mLocation = getLastKnownLocation(false);
-        }
+//        mLocation = getArguments().getParcelable(ARG_LOCATION);
+//        if (mLocation == null) {
+//            Log.i(TAG, "onActivityCreated: (mLocation == null) Get lastKnowLocation (IsMoveMarker: TRUE)");
+//            mLocation = getLastKnownLocation(true);
+//        }
         Log.i(TAG, "onActivityCreated: Added Map into mapContainer");
         mMapFragment = SupportMapFragment.newInstance();
         FragmentTransaction fragmentTransaction = getChildFragmentManager().beginTransaction();
         fragmentTransaction.add(R.id.mapContainer, mMapFragment, "map");
         fragmentTransaction.commit();
+
         Log.i(TAG, "onActivityCreated: getMapAsync(this)");
         mMapFragment.getMapAsync(this);
-        Log.i(TAG, "onActivityCreated: Compose test data for RecycleView");
-        ArrayList<String> testData = new ArrayList<String>(100);
-        for (int i = 0; i < 4; i++) {
-            testData.add("Item " + i);
-        }
 
-        mHeaderAdapter = new HeaderAdapter(getActivity(), testData, this);
-        mListView.setItemAnimator(null);
-        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        mListView.setLayoutManager(layoutManager);
-        mListView.setAdapter(mHeaderAdapter);
+//        Log.i(TAG, "onActivityCreated: Compose test data for RecycleView");
+//        ArrayList<String> testData = new ArrayList<String>(100);
+//        for (int i = 0; i < 4; i++) {
+//            testData.add("Item " + i);
+//        }
+//        mHeaderAdapter = new HeaderAdapter(getActivity(), testData, this);
+//        mListView.setItemAnimator(null);
+//        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+//        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+//        mListView.setLayoutManager(layoutManager);
+//        mListView.setAdapter(mHeaderAdapter);
+
         Log.i(TAG, "onActivityCreated: Compose GoogleApiClient");
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addApi(LocationServices.API)
@@ -176,7 +202,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
                 .addOnConnectionFailedListener(this)
                 .build();
 
-        setUpMapIfNeeded();
+
     }
 
     @Override
@@ -184,22 +210,12 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
         return super.getLoaderManager();
     }
 
-    private void setUpMapIfNeeded() {
-
-        // Do a null check to confirm that we have not already instantiated the map.
-        if (mMap == null) {
-            Log.i(TAG, "setUpMapIfNeeded: Try to obtain the map from the SupportMapFragment");
-            // Try to obtain the map from the SupportMapFragment.
-
-
-        }
-    }
 
     @Override
     public void onResume() {
         super.onResume();
         // In case Google Play services has since become available.
-        setUpMapIfNeeded();
+
     }
 
     @Override
@@ -216,34 +232,71 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
         super.onStop();
     }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+
+        mMap = googleMap;
+
+        Activity activity = getActivity();
+        Log.i(TAG, "onMapReady: Check if we were successful in obtaining the map");
+        // Check if we were successful in obtaining the map.
+        if (mMap != null) {
+            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            if (ContextCompat.checkSelfPermission(activity,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+                //false
+                Log.i(TAG, "onMapReady: Set My LocationEnabled: TRUE");
+                mMap.setMyLocationEnabled(true);
+            }
+            Log.i(TAG, "onMapReady: Compose Map Setting");
+            mMap.getUiSettings().setCompassEnabled(true);
+            mMap.getUiSettings().setZoomControlsEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            mMap.getUiSettings().setRotateGesturesEnabled(true);
+            mMap.getUiSettings().setTiltGesturesEnabled(true);
+            LatLng update = getLastKnownLocation();
+            if (update != null) {
+                Log.i(TAG, "onMapReady: Move Camera into new possition");
+                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(update, 19f)));
+            }
+            Log.i(TAG, "onMapReady: Set Listener on Map");
+            mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                @Override
+                public void onMapClick(LatLng latLng) {
+                    Log.i(TAG, "onMapReady: Set  mIsNeedLocationUpdate: TRUE");
+                    mIsNeedLocationUpdate = true;
+                    Log.i(TAG, "onMapReady: (moveToLocation): moveCamera flag: TRUE");
+                    moveToLocation(latLng, true);
+                }
+            });
+        }
+
+    }
+
     private LatLng getLastKnownLocation() {
+        Log.i(TAG, "getLastKnownLocation(): call--> getLastKnownLocation(isMoveMarker: TRUE");
         return getLastKnownLocation(true);
     }
 
     private LatLng getLastKnownLocation(boolean isMoveMarker) {
 
+
         LocationManager lm = (LocationManager) TheApp.getAppContext().getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        criteria.setAccuracy(Criteria.ACCURACY_LOW);
-        String provider = lm.getBestProvider(criteria, true);
-        if (provider == null) {
-            return null;
+
+        mLocationModel = LocationModel.getInstanceLocationModel();
+        if (mLocationModel != null) {
+            Log.i(TAG, "Register Observer for get Location");
+            mLocationModel.registerObserver(this);
+            Log.i(TAG, "Start get Location");
+            mLocationModel.startGetLocation(getActivity(), lm);
         }
-        Activity activity = getActivity();
-        if (activity == null) {
-            return null;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return null;
-            }
-        }
-        Log.i(TAG, "getLastKnownLocation(boolean isMoveMarker): GetProvider: " + provider);
-        Location loc = lm.getLastKnownLocation(provider);
-        if (loc != null) {
+
+
+        if (mLocationModel != null) {
             Log.i(TAG, "getLastKnownLocation(boolean isMoveMarker): Get Location! ");
-            LatLng latLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+            LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
             Log.i(TAG, "getLastKnownLocation(boolean isMoveMarker): Check Move Marker: " + isMoveMarker);
             if (isMoveMarker) {
                 moveMarker(latLng);
@@ -256,21 +309,69 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
     private void moveMarker(LatLng latLng) {
         Log.i(TAG, "moveMarker: Lat:" + latLng.latitude + " Lon: " + latLng.longitude);
         getPlaceInfo(latLng);
-        if (mLocationMarker != null) {
-            mLocationMarker.remove();
+
+
+        initMapMarkerOptions(latLng);
+
+
+    }
+
+    private void initMapMarkerOptions(LatLng latLng) {
+        if (mLocationMarkerA != null) {
+            mLocationMarkerA.remove();
         }
-        Log.i(TAG, "moveMarker: Added Marker!");
+        Log.i(TAG, "initMapMarkerOptions: Added Marker!");
         MarkerOptions markerApointOptions = new MarkerOptions();
         markerApointOptions.position(latLng);
         markerApointOptions.title("A Position");
         markerApointOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
 
-        mLocationMarker = mMap.addMarker(markerApointOptions);
+        mLocationMarkerA = mMap.addMarker(markerApointOptions);
+        final String address = getPlaceInfo(latLng);
 
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
-//        mLocationMarker = mMap.addMarker(new MarkerOptions()
-//                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA))
-//                .position(latLng).anchor(0.5f, 0.5f));
+            @Override
+            public View getInfoWindow(Marker marker) {
+                if (marker.getId().equals(MainFragment.this.mLocationMarkerA.getId())) {
+
+                    PositionInfoButton infoButton = new PositionInfoButton(getActivity(), null);
+                    TextView text = (TextView) infoButton.findViewById(R.id.tv);
+                    Button btn = (Button) infoButton.findViewById(R.id.btnAdd);
+                    btn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+
+                            Log.i(TAG, "Button Position Clicked!: " + "Add in List You Address: " + address);
+
+                        }
+                    });
+                    if (address != null) {
+
+                        text.setText(address);
+                    } else {
+                        text.setText("Coul not get address");
+                    }
+                    text.setTextColor(Color.BLACK);
+                    return infoButton;
+
+                } else
+                    return null;
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                TextView tv = new TextView(getActivity());
+
+                if (address != null) {
+                    tv.setText(address);
+                } else {
+                    tv.setText("Coul not get address");
+                }
+                return tv;
+            }
+        });
+        mLocationMarkerA.showInfoWindow();
     }
 
     private void moveToLocation(Location location) {
@@ -382,48 +483,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-
-        mMap = googleMap;
-        Activity activity = getActivity();
-        Log.i(TAG, "onMapReady: Check if we were successful in obtaining the map");
-        // Check if we were successful in obtaining the map.
-        if (mMap != null) {
-            if (ContextCompat.checkSelfPermission(activity,
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-
-                //false
-                Log.i(TAG, "onMapReady: Set My LocationEnabled: TRUE");
-                mMap.setMyLocationEnabled(true);
-            }
-            Log.i(TAG, "onMapReady: Compose Map Setting");
-            mMap.getUiSettings().setCompassEnabled(true);
-            mMap.getUiSettings().setZoomControlsEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(true);
-            mMap.getUiSettings().setRotateGesturesEnabled(true);
-            mMap.getUiSettings().setTiltGesturesEnabled(true);
-            LatLng update = getLastKnownLocation();
-            if (update != null) {
-                Log.i(TAG, "onMapReady: Move Camera into new possition");
-                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(update, 11.0f)));
-            }
-            Log.i(TAG, "onMapReady: Set Listener on Map");
-            mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-                @Override
-                public void onMapClick(LatLng latLng) {
-                    Log.i(TAG, "onMapReady: Set  mIsNeedLocationUpdate: FALSE");
-                    mIsNeedLocationUpdate = false;
-                    Log.i(TAG, "onMapReady: (moveToLocation): moveCamera flag: FALSE");
-                    moveToLocation(latLng, false);
-                }
-            });
-        }
-
-    }
-
-    public void getPlaceInfo(LatLng latLng) {
+    public String getPlaceInfo(LatLng latLng) {
 
         List<Address> geocodeMatches = null;
         String Address1;
@@ -431,6 +491,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
         String State;
         String Zipcode;
         String Country;
+        String address;
         Activity activity = getActivity();
         // 1- int maxResults
         try {
@@ -452,7 +513,53 @@ public class MainFragment extends Fragment implements OnMapReadyCallback, Google
             Log.i(TAG, "State: " + State);
             Log.i(TAG, "Zipcode: " + Zipcode);
             Log.i(TAG, "Country: " + Country);
+
+            address = Address1;
+            return address;
         }
+        return null;
+    }
+
+    private void showProgress(final boolean show) {
+
+        mProgress = (ProgressBar) getActivity().findViewById(R.id.progressInd);
+        if (mProgress != null) {
+            mProgress.setVisibility(show ? View.VISIBLE : View.GONE);
+        } else {
+
+            Log.i(TAG, "showProgress: fail");
+        }
+    }
+
+    @Override
+    public void onStarted(Object model) {
+        showProgress(true);
+    }
+
+    @Override
+    public void onSucceeded(Object model) {
+        Log.i(TAG, "onLocationSucceeded");
+        showProgress(false);
+        mLocationModel.stopGetLocation();
+        Toast.makeText(TheApp.getAppContext(), "Location gets", Toast.LENGTH_SHORT).show();
+
+
+    }
+
+    @Override
+    public void onFailed(Object model) {
+        Log.i(TAG, "onLocationFailed");
+        showProgress(false);
+        Toast.makeText(TheApp.getAppContext(), "Could not get location. Start task again!", Toast.LENGTH_SHORT).show();
+
+    }
+
+    @Override
+    public void onFailedProvider(Object model) {
+
+        Toast.makeText(TheApp.getAppContext(), "Provider absent", Toast.LENGTH_SHORT).show();
+
+
     }
 
 

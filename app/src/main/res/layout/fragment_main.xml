@@ -22,15 +22,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <!--<ProgressBar-->
-                <!--android:id="@+id/progress"-->
-                <!--android:indeterminateDrawable="@drawable/loader4_progress"-->
-                <!--android:layout_height="50dp"-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_alignTop="@+id/rv"-->
-                <!--android:layout_centerHorizontal="true"-->
-                <!--android:layout_marginTop="179dp">-->
-            <!--</ProgressBar>-->
+            <ProgressBar
+                android:id="@+id/progressInd"
+                android:indeterminateDrawable="@drawable/loader4_progress"
+                android:layout_height="50dp"
+                android:layout_width="match_parent"
+                android:layout_alignTop="@+id/rv"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="179dp">
+            </ProgressBar>
         </FrameLayout>
 
         <RelativeLayout
@@ -40,21 +40,18 @@
 
             <View
                 android:id="@+id/transparentView"
+                android:visibility="gone"
+                android:layout_width="fill_parent"
+                android:layout_height="@dimen/map_height"
+                android:layout_alignParentTop="true"/>
+
+            <View
+                android:id="@+id/whiteSpaceView"
+                android:visibility="gone"
+                android:background="@android:color/white"
+                android:layout_marginTop="@dimen/map_height"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_alignParentTop="true"
-                android:visibility="gone" />
-
-
-
-            <!--<View-->
-                <!--android:id="@+id/whiteSpaceView"-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="match_parent"-->
-                <!--android:layout_marginTop="200dp"-->
-                <!--android:background="@android:color/white"-->
-                <!--android:visibility="gone" />-->
-            <!--&lt;!&ndash;"@dimen/map_height"&ndash;&gt;-->
+                android:layout_height="match_parent"/>
 
             <com.navigator.LockableRecyclerView
                 android:id="@android:id/list"

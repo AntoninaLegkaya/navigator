@@ -4,15 +4,15 @@
     android:id="@+id/fragment"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
-    <ProgressBar
-        android:id="@+id/progressInd"
-        android:indeterminateDrawable="@drawable/loader4_progress"
-        android:layout_height="50dp"
-        android:layout_width="match_parent"
-        android:layout_alignTop="@+id/rv"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="179dp">
-    </ProgressBar>
+    <!--<ProgressBar-->
+        <!--android:id="@+id/progressInd"-->
+        <!--android:indeterminateDrawable="@drawable/loader4_progress"-->
+        <!--android:layout_height="50dp"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_alignTop="@+id/rv"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:layout_marginTop="179dp">-->
+    <!--</ProgressBar>-->
 </FrameLayout>
 
 <!--<?xml version="1.0" encoding="utf-8"?>-->

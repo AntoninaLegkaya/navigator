@@ -22,11 +22,9 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Address;
-import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -39,6 +37,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -64,15 +64,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.navigator.customElements.PositionInfoButton;
+import com.navigator.customElements.PositionInfoFrame;
 import com.navigator.interfaces.Observer;
 import com.navigator.model.LocationModel;
-import com.navigator.service.LocationService;
+import com.navigator.model.MarkerPlace;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
-
-import butterknife.Bind;
-import butterknife.ButterKnife;
 
 
 public class MainFragment extends Fragment implements Observer, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
@@ -86,24 +82,20 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private View mTransparentView;
     private View mWhiteSpaceView;
-
     private HeaderAdapter mHeaderAdapter;
-
     private LatLng mLocation;
-    private Marker mLocationMarkerA;
-    private Marker mLocationMarkerB;
+    private MarkerPlace mPlaceMarkerA;
+    private MarkerPlace mPlaceMarkerB;
+
 
     private SupportMapFragment mMapFragment;
-
     private GoogleMap mMap;
     private boolean mIsNeedLocationUpdate = true;
-
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private LocationModel mLocationModel;
-
-
     private ProgressBar mProgress;
+
 
     public MainFragment() {
     }
@@ -136,7 +128,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
 
 
-        int mapHeight = 0;
+        int mapHeight = getResources().getDimensionPixelSize(R.dimen.map_height);
         //getResources().getDimensionPixelSize(R.dimen.map_height);
 
         Log.i(TAG, "onCreateView: Set height sliding Panel: " + mapHeight);
@@ -148,10 +140,11 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         // transparent view at the top of ListView
         Log.i(TAG, "onCreateView: transparent view at the top of RecycleView ");
         mTransparentView = rootView.findViewById(R.id.transparentView);
-//        mWhiteSpaceView = rootView.findViewById(R.id.whiteSpaceView);
-        Log.i(TAG, "onCreateView: expand Map ");
-        expandMap();
-//        collapseMap();
+        mWhiteSpaceView = rootView.findViewById(R.id.whiteSpaceView);
+//        Log.i(TAG, "onCreateView: expand Map ");
+//        expandMap();
+        Log.i(TAG, "onCreateView: collapse Map ");
+        collapseMap();
 
         mSlidingUpPanelLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -183,17 +176,21 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onActivityCreated: getMapAsync(this)");
         mMapFragment.getMapAsync(this);
 
-//        Log.i(TAG, "onActivityCreated: Compose test data for RecycleView");
-//        ArrayList<String> testData = new ArrayList<String>(100);
-//        for (int i = 0; i < 4; i++) {
-//            testData.add("Item " + i);
-//        }
-//        mHeaderAdapter = new HeaderAdapter(getActivity(), testData, this);
-//        mListView.setItemAnimator(null);
-//        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-//        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-//        mListView.setLayoutManager(layoutManager);
-//        mListView.setAdapter(mHeaderAdapter);
+        Log.i(TAG, "onActivityCreated: Compose test data for RecycleView");
+        ArrayList<String> testData = new ArrayList<String>(5);
+        for (int i = 0; i < 5; i++) {
+            testData.add("Item " + i);
+        }
+
+
+
+
+        mHeaderAdapter = new HeaderAdapter(getActivity(), testData, this);
+        mListView.setItemAnimator(null);
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        mListView.setLayoutManager(layoutManager);
+        mListView.setAdapter(mHeaderAdapter);
 
         Log.i(TAG, "onActivityCreated: Compose GoogleApiClient");
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
@@ -309,70 +306,50 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     private void moveMarker(LatLng latLng) {
         Log.i(TAG, "moveMarker: Lat:" + latLng.latitude + " Lon: " + latLng.longitude);
         getPlaceInfo(latLng);
-
-
         initMapMarkerOptions(latLng);
-
-
     }
 
     private void initMapMarkerOptions(LatLng latLng) {
-        if (mLocationMarkerA != null) {
-            mLocationMarkerA.remove();
+        final Address address = getPlaceInfo(latLng);
+        String addInfo="Could not get address";
+        String addressLine="";
+        if(address!=null){
+        addInfo = address.getAddressLine(0);
+           addressLine = address.getAddressLine(0) +
+                    ',' + address.getAddressLine(1) + "," + address.getAdminArea() + "," + address.getCountryName();
+            Log.i(TAG, "Address line for search coordinats: " + "\n" + addressLine);
         }
-        Log.i(TAG, "initMapMarkerOptions: Added Marker!");
-        MarkerOptions markerApointOptions = new MarkerOptions();
-        markerApointOptions.position(latLng);
-        markerApointOptions.title("A Position");
-        markerApointOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
 
-        mLocationMarkerA = mMap.addMarker(markerApointOptions);
-        final String address = getPlaceInfo(latLng);
-
-        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-
-            @Override
-            public View getInfoWindow(Marker marker) {
-                if (marker.getId().equals(MainFragment.this.mLocationMarkerA.getId())) {
-
-                    PositionInfoButton infoButton = new PositionInfoButton(getActivity(), null);
-                    TextView text = (TextView) infoButton.findViewById(R.id.tv);
-                    Button btn = (Button) infoButton.findViewById(R.id.btnAdd);
-                    btn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-
-                            Log.i(TAG, "Button Position Clicked!: " + "Add in List You Address: " + address);
-
-                        }
-                    });
-                    if (address != null) {
-
-                        text.setText(address);
-                    } else {
-                        text.setText("Coul not get address");
-                    }
-                    text.setTextColor(Color.BLACK);
-                    return infoButton;
-
-                } else
-                    return null;
+        if (mPlaceMarkerA != null) {
+            if (mPlaceMarkerA.isFlag()) {
+                mPlaceMarkerA.getPoint().remove();
+                mPlaceMarkerA.updateMarkerOptions(latLng, mPlaceMarkerA.getPoint(), addInfo);
             }
+        } else {
+            mPlaceMarkerA = new MarkerPlace(BitmapDescriptorFactory.HUE_MAGENTA, latLng, mMap,
+                    addInfo);
+            mPlaceMarkerA.initMarkerPoint();
+        }
+//        if (mPlaceMarkerB != null) {
+//
+//            if (mPlaceMarkerB.isFlag()) {
+//                mPlaceMarkerB.getPoint().remove();
+//                mPlaceMarkerB.updateMarkerOptions(latLng, mPlaceMarkerB.getPoint(), addInfo);
+//            }
+//        } else {
+//
+//            LatLng coord = getLocationByAddress(addressLine);
+//            if (coord != null) {
+//                Log.i(TAG, "Get coordinats for Second point: "+"\n" +"Latitude: " +coord.latitude + "Lontitude: " +coord.longitude);
+//                mPlaceMarkerB = new MarkerPlace(BitmapDescriptorFactory.HUE_GREEN, coord, mMap,
+//                        addInfo);
+//                mPlaceMarkerB.initMarkerPoint();
+//            }
+//        }
 
-            @Override
-            public View getInfoContents(Marker marker) {
-                TextView tv = new TextView(getActivity());
 
-                if (address != null) {
-                    tv.setText(address);
-                } else {
-                    tv.setText("Coul not get address");
-                }
-                return tv;
-            }
-        });
-        mLocationMarkerA.showInfoWindow();
     }
+
 
     private void moveToLocation(Location location) {
         if (location == null) {
@@ -482,8 +459,31 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mSlidingUpPanelLayout.collapsePane();
     }
 
+    public LatLng getLocationByAddress(String address) {
+        List<Address> geocodeMatches = null;
 
-    public String getPlaceInfo(LatLng latLng) {
+        try {
+            geocodeMatches =
+                    new Geocoder(getActivity()).getFromLocationName(
+                            address, 1);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        if (!geocodeMatches.isEmpty()) {
+            double latitude = geocodeMatches.get(0).getLatitude();
+            double longitude = geocodeMatches.get(0).getLongitude();
+            LatLng latLng = new LatLng(latitude, longitude);
+            return latLng;
+        }
+
+
+        return null;
+
+    }
+
+    public Address getPlaceInfo(LatLng latLng) {
 
         List<Address> geocodeMatches = null;
         String Address1;
@@ -514,8 +514,8 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             Log.i(TAG, "Zipcode: " + Zipcode);
             Log.i(TAG, "Country: " + Country);
 
-            address = Address1;
-            return address;
+
+            return geocodeMatches.get(0);
         }
         return null;
     }

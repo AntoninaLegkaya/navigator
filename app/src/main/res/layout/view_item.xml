@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:background="@drawable/my_border"
+    android:focusable="false"
+    android:orientation="horizontal">
+
+    <TextView
+        android:type="@+id/text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/btn_add"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_weight="0.8"
+        android:focusable="false"
+        android:text="Item" />
+
+
+    <Button
+        android:type="@+id/btn_add"
+        android:layout_width="35dp"
+        android:layout_height="40dp"
+        android:layout_toRightOf="@+id/text_view"
+        android:layout_weight="0.2"
+        android:focusable="true"
+        android:text="+"
+
+        />
+
+</RelativeLayout>

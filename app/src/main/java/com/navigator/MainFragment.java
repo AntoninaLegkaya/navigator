@@ -20,7 +20,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -37,12 +36,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -57,18 +52,20 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+
+
+import com.navigator.interfaces.Observer;
+import com.navigator.model.LocationModel;
+import com.navigator.model.MarkerPlace;
+import com.navigator.model.Place;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.navigator.customElements.PositionInfoFrame;
-import com.navigator.interfaces.Observer;
-import com.navigator.model.LocationModel;
-import com.navigator.model.MarkerPlace;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
 
 public class MainFragment extends Fragment implements Observer, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
@@ -76,12 +73,20 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private static final String ARG_LOCATION = "arg.location";
     private static final String TAG = MainFragment.class.getSimpleName();
+    private static final int TYPE_MAIN_POINT = 0;
+    private static final int TYPE_LAST_POIN = 1;
+    private static final int TYPE_MEDIAT_POIN = 2;
+    @Bind(R.id.list)
+    LockableRecyclerView mListView;
+    @Bind(R.id.slidingLayout)
+    SlidingUpPanelLayout mSlidingUpPanelLayout;
+    @Bind(R.id.transparentView)
+    View mTransparentView;
+    @Bind(R.id.whiteSpaceView)
+    View mWhiteSpaceView;
+    @Bind(R.id.progressInd)
+    ProgressBar mProgress;
 
-    private LockableRecyclerView mListView;
-    private SlidingUpPanelLayout mSlidingUpPanelLayout;
-
-    private View mTransparentView;
-    private View mWhiteSpaceView;
     private HeaderAdapter mHeaderAdapter;
     private LatLng mLocation;
     private MarkerPlace mPlaceMarkerA;
@@ -94,7 +99,8 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private LocationModel mLocationModel;
-    private ProgressBar mProgress;
+
+    private ArrayList<Place> mPlaces = new ArrayList<Place>();
 
 
     public MainFragment() {
@@ -112,6 +118,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRetainInstance(true);
     }
 
     @Override
@@ -119,14 +126,13 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onCreateView: compose viewGroup fragment_main");
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-
         Log.i(TAG, "onCreateView: add listView to fragment_main");
-        mListView = (LockableRecyclerView) rootView.findViewById(android.R.id.list);
+        mListView = ButterKnife.findById(rootView, R.id.list);
         mListView.setOverScrollMode(ListView.OVER_SCROLL_NEVER);
         Log.i(TAG, "onCreateView: add sliding Panel to fragment_main");
-        mSlidingUpPanelLayout = (SlidingUpPanelLayout) rootView.findViewById(R.id.slidingLayout);
+        mSlidingUpPanelLayout = ButterKnife.findById(rootView, R.id.slidingLayout);
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
-
+        mProgress = ButterKnife.findById(rootView, R.id.progressInd);
 
         int mapHeight = getResources().getDimensionPixelSize(R.dimen.map_height);
         //getResources().getDimensionPixelSize(R.dimen.map_height);
@@ -134,17 +140,15 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onCreateView: Set height sliding Panel: " + mapHeight);
         mSlidingUpPanelLayout.setPanelHeight(mapHeight); // you can use different height here
         mSlidingUpPanelLayout.setScrollableView(mListView, mapHeight);
-
         mSlidingUpPanelLayout.setPanelSlideListener(this);
 
         // transparent view at the top of ListView
         Log.i(TAG, "onCreateView: transparent view at the top of RecycleView ");
-        mTransparentView = rootView.findViewById(R.id.transparentView);
-        mWhiteSpaceView = rootView.findViewById(R.id.whiteSpaceView);
-//        Log.i(TAG, "onCreateView: expand Map ");
-//        expandMap();
-        Log.i(TAG, "onCreateView: collapse Map ");
-        collapseMap();
+        mTransparentView = ButterKnife.findById(rootView, R.id.transparentView);
+        mWhiteSpaceView = ButterKnife.findById(rootView, R.id.whiteSpaceView);
+        Log.i(TAG, "onCreateView: expand Map ");
+        expandMap();
+
 
         mSlidingUpPanelLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -153,8 +157,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
                 mSlidingUpPanelLayout.onPanelDragged(0);
             }
         });
-
-
+        ButterKnife.bind(this, rootView);
         return rootView;
     }
 
@@ -162,11 +165,6 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-//        mLocation = getArguments().getParcelable(ARG_LOCATION);
-//        if (mLocation == null) {
-//            Log.i(TAG, "onActivityCreated: (mLocation == null) Get lastKnowLocation (IsMoveMarker: TRUE)");
-//            mLocation = getLastKnownLocation(true);
-//        }
         Log.i(TAG, "onActivityCreated: Added Map into mapContainer");
         mMapFragment = SupportMapFragment.newInstance();
         FragmentTransaction fragmentTransaction = getChildFragmentManager().beginTransaction();
@@ -175,23 +173,6 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
         Log.i(TAG, "onActivityCreated: getMapAsync(this)");
         mMapFragment.getMapAsync(this);
-
-        Log.i(TAG, "onActivityCreated: Compose test data for RecycleView");
-        ArrayList<String> testData = new ArrayList<String>(5);
-        for (int i = 0; i < 5; i++) {
-            testData.add("Item " + i);
-        }
-
-
-
-
-        mHeaderAdapter = new HeaderAdapter(getActivity(), testData, this);
-        mListView.setItemAnimator(null);
-        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        mListView.setLayoutManager(layoutManager);
-        mListView.setAdapter(mHeaderAdapter);
-
         Log.i(TAG, "onActivityCreated: Compose GoogleApiClient");
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addApi(LocationServices.API)
@@ -202,32 +183,59 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     }
 
-    @Override
-    public LoaderManager getLoaderManager() {
-        return super.getLoaderManager();
+    private void composePlaceRecycleView() {
+        Log.i(TAG, "composePlaceRecycleView: Compose test data for RecycleView");
+
+        final LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
+        final Address placeInfo = getPlaceInfo(latLng);
+        String mTextItemAddress = "Could not get Address";
+        if (placeInfo != null) {
+            mTextItemAddress = placeInfo.getAddressLine(0);
+        }
+        if (mPlaces.isEmpty()) {
+            Place place = new Place(mTextItemAddress, TYPE_MAIN_POINT, latLng);
+            mPlaces.add(place);
+        } else {
+            int type = TYPE_MEDIAT_POIN;
+            for (Place pl : mPlaces) {
+                switch (pl.getType()) {
+                    case TYPE_MAIN_POINT:
+                        Log.i(TAG, "Find MAIN POINT");
+                        type = TYPE_LAST_POIN;
+                    case TYPE_LAST_POIN:
+                        type = TYPE_MEDIAT_POIN;
+                        Log.i(TAG, "Find LAST POINT");
+                    case TYPE_MEDIAT_POIN:
+
+                }
+            }
+
+            Log.i(TAG, "Created Place Item with type: " + type);
+            Place place = new Place(mTextItemAddress, type, latLng);
+            mPlaces.add(place);
+
+        }
+
+
+        mHeaderAdapter = new HeaderAdapter(getActivity(), mPlaces, this);
+
+        mHeaderAdapter.setOnItemClickListener(new HeaderAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View v, int position) {
+                Log.i(TAG, "On Item Click: possition: " + position);
+                String address = mPlaces.get(position - 1).getAddress();
+                Log.i(TAG, "HeaderAdapter On Item Click: Move to possition for address " + mPlaces.get(position - 1).getAddress());
+                moveToLocation(mPlaces.get(position - 1).getLatLng(), true);
+//                mHeaderAdapter.deleteItem(position);
+                Toast.makeText(TheApp.getAppContext(), address, Toast.LENGTH_SHORT).show();
+            }
+        });
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        mListView.setLayoutManager(layoutManager);
+        mListView.setAdapter(mHeaderAdapter);
     }
 
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        // In case Google Play services has since become available.
-
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        // Connect the client.
-        mGoogleApiClient.connect();
-    }
-
-    @Override
-    public void onStop() {
-        // Disconnecting the client invalidates it.
-        mGoogleApiClient.disconnect();
-        super.onStop();
-    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -236,7 +244,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
         Activity activity = getActivity();
         Log.i(TAG, "onMapReady: Check if we were successful in obtaining the map");
-        // Check if we were successful in obtaining the map.
+
         if (mMap != null) {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             if (ContextCompat.checkSelfPermission(activity,
@@ -255,7 +263,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             mMap.getUiSettings().setTiltGesturesEnabled(true);
             LatLng update = getLastKnownLocation();
             if (update != null) {
-                Log.i(TAG, "onMapReady: Move Camera into new possition");
+                Log.i(TAG, "onMapReady: Move Camera into new mPlacePosition");
                 mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(update, 19f)));
             }
             Log.i(TAG, "onMapReady: Set Listener on Map");
@@ -290,8 +298,8 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             mLocationModel.startGetLocation(getActivity(), lm);
         }
 
-
         if (mLocationModel != null) {
+
             Log.i(TAG, "getLastKnownLocation(boolean isMoveMarker): Get Location! ");
             LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
             Log.i(TAG, "getLastKnownLocation(boolean isMoveMarker): Check Move Marker: " + isMoveMarker);
@@ -305,28 +313,30 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private void moveMarker(LatLng latLng) {
         Log.i(TAG, "moveMarker: Lat:" + latLng.latitude + " Lon: " + latLng.longitude);
-        getPlaceInfo(latLng);
         initMapMarkerOptions(latLng);
     }
 
     private void initMapMarkerOptions(LatLng latLng) {
         final Address address = getPlaceInfo(latLng);
-        String addInfo="Could not get address";
-        String addressLine="";
-        if(address!=null){
-        addInfo = address.getAddressLine(0);
-           addressLine = address.getAddressLine(0) +
+        String addInfo = "Could not get address";
+        String addressLine = "";
+        if (address != null) {
+            addInfo = address.getAddressLine(0);
+            addressLine = address.getAddressLine(0) +
                     ',' + address.getAddressLine(1) + "," + address.getAdminArea() + "," + address.getCountryName();
             Log.i(TAG, "Address line for search coordinats: " + "\n" + addressLine);
+        } else {
+
+            Log.i(TAG, "initMapMarkerOptions: addressInfo: " + addInfo);
         }
 
         if (mPlaceMarkerA != null) {
             if (mPlaceMarkerA.isFlag()) {
                 mPlaceMarkerA.getPoint().remove();
-                mPlaceMarkerA.updateMarkerOptions(latLng, mPlaceMarkerA.getPoint(), addInfo);
+                mPlaceMarkerA.updateMarkerOptions(latLng, addInfo);
             }
         } else {
-            mPlaceMarkerA = new MarkerPlace(BitmapDescriptorFactory.HUE_MAGENTA, latLng, mMap,
+            mPlaceMarkerA = new MarkerPlace(TheApp.getAppContext(), BitmapDescriptorFactory.HUE_MAGENTA, latLng, mMap,
                     addInfo);
             mPlaceMarkerA.initMarkerPoint();
         }
@@ -539,9 +549,10 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     @Override
     public void onSucceeded(Object model) {
         Log.i(TAG, "onLocationSucceeded");
-        showProgress(false);
-        mLocationModel.stopGetLocation();
         Toast.makeText(TheApp.getAppContext(), "Location gets", Toast.LENGTH_SHORT).show();
+        showProgress(false);
+        composePlaceRecycleView();
+        mLocationModel.stopGetLocation();
 
 
     }
@@ -562,5 +573,30 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     }
 
+    @Override
+    public LoaderManager getLoaderManager() {
+        return super.getLoaderManager();
+    }
 
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // In case Google Play services has since become available.
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Connect the client.
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onStop() {
+        // Disconnecting the client invalidates it.
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
 }

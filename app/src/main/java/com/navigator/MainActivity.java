@@ -20,11 +20,10 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private LocationModel locationModel;
-//    @Bind(R.id.progressInd)
-//    View mProgress;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 

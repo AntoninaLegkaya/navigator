@@ -83,7 +83,7 @@ public class MarkerPlace {
                 if (marker.getId().equals(point.getId())) {
                     Log.i(TAG, "Point id: " + point.getId() + " Clicked InfoWindow");
 
-                    Log.i(TAG, "Set New information in marker InfoWind");
+
 
                 }
 

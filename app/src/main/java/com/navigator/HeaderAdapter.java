@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.navigator.model.Place;
@@ -33,11 +34,11 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     public static OnItemClickListener listener;
 
-    public interface OnItemClickListener{
+    public interface OnItemClickListener {
         void onItemClick(View itemView, int position);
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener){
+    public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
@@ -52,21 +53,23 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         CardView cv;
         TextView mTitleView;
         Button mButtonView;
+        ImageView mIcon;
         int mPlacePosition;
 
 
-        PlaceViewHolder( final View itemView) {
+        PlaceViewHolder(final View itemView) {
             super(itemView);
             Log.i(TAG, "PlaceViewHolder Class: Start compose card view ");
             cv = (CardView) itemView.findViewById(R.id.cv);
             mTitleView = (TextView) itemView.findViewById(R.id.text_view);
+            mIcon = (ImageView) itemView.findViewById(R.id.iconPoint);
             mButtonView = (Button) itemView.findViewById(R.id.btn_add);
             mButtonView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
 
-                    Log.i(TAG, "PlaceViewHolder Button Clicked! Item:  "+ mPlacePosition );
-                    deleteItem(mPlacePosition-1);
+                    Log.i(TAG, "PlaceViewHolder Button Clicked! Item:  " + mPlacePosition);
+                    deleteItem(mPlacePosition - 1);
 
                 }
             });
@@ -75,12 +78,11 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (HeaderAdapter.listener!=null){
+                    if (HeaderAdapter.listener != null) {
                         HeaderAdapter.listener.onItemClick(itemView, getLayoutPosition());
                     }
                 }
             });
-
 
 
             Log.i(TAG, "PlaceViewHolder Class: Finish compose card view ");
@@ -104,7 +106,7 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         public void onClick(View v) {
             ItemClickListener callback = mCallbackRef != null ? mCallbackRef.get() : null;
             if (callback != null) {
-                Log.i(TAG, "SpaceViewHolder onClick: Possition view: "+ mSpacePosition);
+                Log.i(TAG, "SpaceViewHolder onClick: Possition view: " + mSpacePosition);
                 callback.onItemClicked(mSpacePosition);
             }
 
@@ -136,12 +138,28 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             Place dataItem = getItem(position);
             ((PlaceViewHolder) holder).mTitleView.setText(dataItem.getAddress());
             ((PlaceViewHolder) holder).mPlacePosition = position;
+            switch (dataItem.getType()) {
+                case MainFragment.TYPE_MAIN_POINT:
+                    Log.i(TAG, "Type ImagePoint: MAIN POINT");
+                    ((PlaceViewHolder) holder).mIcon.setImageResource(R.mipmap.a48);
+                    break;
+                case MainFragment.TYPE_LAST_POIN:
+                    Log.i(TAG, "Type ImagePoint: LAST POINT");
+                    ((PlaceViewHolder) holder).mIcon.setImageResource(R.mipmap.b48);
+                    break;
+                case MainFragment.TYPE_MEDIAT_POIN:
+                    Log.i(TAG, "Type ImagePoint: MEDIAT POINT");
+                    ((PlaceViewHolder) holder).mIcon.setImageResource(R.mipmap.c48);
+                    break;
+
+            }
+
+
         } else if (holder instanceof SpaceViewHolder) {
             ((SpaceViewHolder) holder).mSpaceView.setVisibility(mIsSpaceVisible ? View.VISIBLE : View.GONE);
             ((SpaceViewHolder) holder).mSpacePosition = position;
         }
     }
-
 
 
     public void addItem(Place data, int index) {

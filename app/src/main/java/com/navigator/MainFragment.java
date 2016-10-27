@@ -73,9 +73,9 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private static final String ARG_LOCATION = "arg.location";
     private static final String TAG = MainFragment.class.getSimpleName();
-    private static final int TYPE_MAIN_POINT = 0;
-    private static final int TYPE_LAST_POIN = 1;
-    private static final int TYPE_MEDIAT_POIN = 2;
+    public static final int TYPE_MAIN_POINT = 0;
+    public static final int TYPE_LAST_POIN = 1;
+    public static final int TYPE_MEDIAT_POIN = 2;
     @Bind(R.id.list)
     LockableRecyclerView mListView;
     @Bind(R.id.slidingLayout)
@@ -134,7 +134,9 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
         mProgress = ButterKnife.findById(rootView, R.id.progressInd);
 
-        int mapHeight = getResources().getDimensionPixelSize(R.dimen.map_height);
+
+
+        int mapHeight = 240;
         //getResources().getDimensionPixelSize(R.dimen.map_height);
 
         Log.i(TAG, "onCreateView: Set height sliding Panel: " + mapHeight);
@@ -147,6 +149,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mTransparentView = ButterKnife.findById(rootView, R.id.transparentView);
         mWhiteSpaceView = ButterKnife.findById(rootView, R.id.whiteSpaceView);
         Log.i(TAG, "onCreateView: expand Map ");
+
         expandMap();
 
 
@@ -157,7 +160,9 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
                 mSlidingUpPanelLayout.onPanelDragged(0);
             }
         });
+
         ButterKnife.bind(this, rootView);
+        Toast.makeText(TheApp.getAppContext(),"Wait, Map is initializing....Composing Map", Toast.LENGTH_SHORT).show();
         return rootView;
     }
 
@@ -179,7 +184,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
-
+        Toast.makeText(TheApp.getAppContext(),"Wait, Map is initializing....GoogleApiClient", Toast.LENGTH_SHORT).show();
 
     }
 
@@ -246,6 +251,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onMapReady: Check if we were successful in obtaining the map");
 
         if (mMap != null) {
+            Toast.makeText(TheApp.getAppContext(),"Wait, Map is ready....", Toast.LENGTH_SHORT).show();
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             if (ContextCompat.checkSelfPermission(activity,
                     Manifest.permission.ACCESS_FINE_LOCATION)
@@ -318,16 +324,16 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private void initMapMarkerOptions(LatLng latLng) {
         final Address address = getPlaceInfo(latLng);
-        String addInfo = "Could not get address";
+        String addInfo = null;
         String addressLine = "";
         if (address != null) {
             addInfo = address.getAddressLine(0);
             addressLine = address.getAddressLine(0) +
                     ',' + address.getAddressLine(1) + "," + address.getAdminArea() + "," + address.getCountryName();
-            Log.i(TAG, "Address line for search coordinats: " + "\n" + addressLine);
+//            Log.i(TAG, "Address line for search coordinats: " + "\n" + addressLine);
         } else {
 
-            Log.i(TAG, "initMapMarkerOptions: addressInfo: " + addInfo);
+            Toast.makeText(TheApp.getAppContext(),"Could not get Adderss", Toast.LENGTH_SHORT).show();
         }
 
         if (mPlaceMarkerA != null) {
@@ -518,11 +524,11 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             Zipcode = geocodeMatches.get(0).getPostalCode();
             Country = geocodeMatches.get(0).getCountryName();
 
-            Log.i(TAG, "Address1: " + Address1);
-            Log.i(TAG, "Address2: " + Address2);
-            Log.i(TAG, "State: " + State);
-            Log.i(TAG, "Zipcode: " + Zipcode);
-            Log.i(TAG, "Country: " + Country);
+//            Log.i(TAG, "Address1: " + Address1);
+//            Log.i(TAG, "Address2: " + Address2);
+//            Log.i(TAG, "State: " + State);
+//            Log.i(TAG, "Zipcode: " + Zipcode);
+//            Log.i(TAG, "Country: " + Country);
 
 
             return geocodeMatches.get(0);

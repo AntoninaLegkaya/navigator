@@ -11,9 +11,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.navigator.interfaces.ActionMapMarker;
 import com.navigator.model.LocationModel;
+import com.navigator.service.InitializeTask;
 import com.navigator.service.LocationService;
 
 import butterknife.Bind;
@@ -30,12 +32,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
-            FragmentTransaction trans = getSupportFragmentManager().beginTransaction();
-            trans.add(R.id.fragment, MainFragment.newInstance(null));
-            trans.commit();
-        }
+
         ButterKnife.bind(this);
+        Toast.makeText(TheApp.getAppContext(), "Wait, Map is initializing....", Toast.LENGTH_SHORT).show();
+        if (savedInstanceState == null) {
+
+            InitializeTask initializeTask = new InitializeTask(this);
+            initializeTask.execute();
+
+        }
 
     }
 

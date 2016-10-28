@@ -34,13 +34,14 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     public static OnItemClickListener listener;
 
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
     public interface OnItemClickListener {
         void onItemClick(View itemView, int position);
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.listener = listener;
-    }
 
     public HeaderAdapter(Context ctx, ArrayList<Place> data, ItemClickListener listener) {
         mLayoutInflater = LayoutInflater.from(ctx);
@@ -69,7 +70,7 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 public void onClick(View v) {
 
                     Log.i(TAG, "PlaceViewHolder Button Clicked! Item:  " + mPlacePosition);
-                    deleteItem(mPlacePosition - 1);
+                    deleteItem(mPlacePosition);
 
                 }
             });
@@ -168,7 +169,14 @@ public class HeaderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public void deleteItem(int index) {
-        mData.remove(index);
+
+        final int ind = index - 1;
+        Log.i(TAG, "DELETE Item form List, index: " + ind);
+        
+
+
+        mData.remove(ind);
+
         notifyItemRemoved(index);
     }
 

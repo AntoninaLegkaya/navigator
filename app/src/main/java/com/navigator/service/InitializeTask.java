@@ -13,6 +13,7 @@ import com.navigator.MainActivity;
 import com.navigator.MainFragment;
 import com.navigator.R;
 import com.navigator.TheApp;
+import com.navigator.layout.MapWrapperLayout;
 
 /**
  * Created by tony on 27.10.16.
@@ -20,15 +21,17 @@ import com.navigator.TheApp;
 
 public class InitializeTask extends AsyncTask<Void, Void, MainFragment> {
     private MainActivity context;
+    private  MapWrapperLayout mapWrapperLayout;
 
-    public InitializeTask(MainActivity context) {
+    public InitializeTask(MainActivity context, MapWrapperLayout mapWrapperLayout) {
         this.context = context;
+//        this.mapWrapperLayout=mapWrapperLayout;
     }
 
     @Override
     protected MainFragment doInBackground(Void... params) {
 
-        final MainFragment fragment = MainFragment.newInstance(null);
+        final MainFragment fragment = MainFragment.newInstance(null,mapWrapperLayout);
         return fragment;
     }
 

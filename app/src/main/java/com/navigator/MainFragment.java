@@ -20,6 +20,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -36,6 +37,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -54,7 +56,9 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
 
+import com.navigator.customElements.MarkerPlaceInfoFrame;
 import com.navigator.interfaces.Observer;
+import com.navigator.layout.MapWrapperLayout;
 import com.navigator.model.LocationModel;
 import com.navigator.model.MarkerPlace;
 import com.navigator.model.Place;
@@ -76,6 +80,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     public static final int TYPE_MAIN_POINT = 0;
     public static final int TYPE_LAST_POIN = 1;
     public static final int TYPE_MEDIAT_POIN = 2;
+    public static final int TYPE_NONE = 3;
     @Bind(R.id.list)
     LockableRecyclerView mListView;
     @Bind(R.id.slidingLayout)
@@ -100,15 +105,24 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     private LocationRequest mLocationRequest;
     private LocationModel mLocationModel;
 
-    private ArrayList<Place> mPlaces = new ArrayList<Place>();
-
-
-    public MainFragment() {
+    public void setMapWrapperLayout(MapWrapperLayout mapWrapperLayout) {
+        this.mapWrapperLayout = mapWrapperLayout;
     }
 
-    public static MainFragment newInstance(LatLng location) {
+    private MapWrapperLayout mapWrapperLayout;
+
+    private ArrayList<Place> mPlaces = new ArrayList<Place>();
+
+    public MainFragment() {
+
+    }
+
+
+    public static MainFragment newInstance(LatLng location, MapWrapperLayout mapWrapperLayout) {
         Log.i(TAG, "Create new Instance Main Fragment");
+
         MainFragment f = new MainFragment();
+//        f.setMapWrapperLayout(mapWrapperLayout);
         Bundle args = new Bundle();
         args.putParcelable(ARG_LOCATION, location);
         f.setArguments(args);
@@ -133,7 +147,6 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mSlidingUpPanelLayout = ButterKnife.findById(rootView, R.id.slidingLayout);
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
         mProgress = ButterKnife.findById(rootView, R.id.progressInd);
-
 
 
         int mapHeight = 240;
@@ -162,7 +175,9 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         });
 
         ButterKnife.bind(this, rootView);
-        Toast.makeText(TheApp.getAppContext(),"Wait, Map is initializing....Composing Map", Toast.LENGTH_SHORT).show();
+        Toast.makeText(TheApp.getAppContext(), "Wait, Map is initializing....Composing Map", Toast.LENGTH_SHORT).show();
+
+
         return rootView;
     }
 
@@ -176,6 +191,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         fragmentTransaction.add(R.id.mapContainer, mMapFragment, "map");
         fragmentTransaction.commit();
 
+
         Log.i(TAG, "onActivityCreated: getMapAsync(this)");
         mMapFragment.getMapAsync(this);
         Log.i(TAG, "onActivityCreated: Compose GoogleApiClient");
@@ -184,40 +200,73 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
-        Toast.makeText(TheApp.getAppContext(),"Wait, Map is initializing....GoogleApiClient", Toast.LENGTH_SHORT).show();
+        Toast.makeText(TheApp.getAppContext(), "Wait, Map is initializing....GoogleApiClient", Toast.LENGTH_SHORT).show();
 
     }
 
-    private void composePlaceRecycleView() {
+    private void composePlaceRecycleView(LatLng latLng, String placeInfo) {
         Log.i(TAG, "composePlaceRecycleView: Compose test data for RecycleView");
 
-        final LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
-        final Address placeInfo = getPlaceInfo(latLng);
-        String mTextItemAddress = "Could not get Address";
-        if (placeInfo != null) {
-            mTextItemAddress = placeInfo.getAddressLine(0);
-        }
+//        final LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
+//        final Address placeInfo = getPlaceInfo(latLng);
+//        String mTextItemAddress = "Could not get Address";
+
         if (mPlaces.isEmpty()) {
-            Place place = new Place(mTextItemAddress, TYPE_MAIN_POINT, latLng);
-            mPlaces.add(place);
+            if (placeInfo == null) {
+                placeInfo = "Откуда...";
+            }
+            Place place = new Place(placeInfo, TYPE_MAIN_POINT, latLng);
+            mPlaces.add(0, place);
         } else {
-            int type = TYPE_MEDIAT_POIN;
+
+            int type = TYPE_NONE;
             for (Place pl : mPlaces) {
                 switch (pl.getType()) {
-                    case TYPE_MAIN_POINT:
+                    case TYPE_MAIN_POINT: {
                         Log.i(TAG, "Find MAIN POINT");
+                        if (pl.getAddress() == "Откуда..." && placeInfo != null) {
+                            type = TYPE_MAIN_POINT;
+                            Place place = new Place(placeInfo, type, latLng);
+                            mPlaces.remove(pl);
+                            mPlaces.add(0, place);
+                            type = TYPE_NONE;
+                            Log.i(TAG, "Update MAIN POINT");
+                            break;
+                        }
+                        Log.i(TAG, "Change MAIN POINT type --->TYPE LAST POIN ");
                         type = TYPE_LAST_POIN;
-                    case TYPE_LAST_POIN:
-                        type = TYPE_MEDIAT_POIN;
-                        Log.i(TAG, "Find LAST POINT");
-                    case TYPE_MEDIAT_POIN:
+                        if (placeInfo == null) {
+                            placeInfo = "Куда...";
+                        }
 
+                        break;
+                    }
+                    case TYPE_LAST_POIN: {
+                        Log.i(TAG, "Find LAST POINT");
+
+                        if (pl.getAddress() == "Kуда..." && placeInfo != null) {
+                            type = TYPE_LAST_POIN;
+                            Place place = new Place(placeInfo, type, latLng);
+                            mPlaces.remove(pl);
+                            mPlaces.add(mPlaces.size() - 1, place);
+                            type = TYPE_NONE;
+                            break;
+                        }
+                        Log.i(TAG, "Change LAST POINT type --->TYPE MEDIAT POIN ");
+                        type = TYPE_MEDIAT_POIN;
+                        if (placeInfo == null) {
+                            placeInfo = "Could not get Address";
+                        }
+
+                    }
                 }
             }
-
-            Log.i(TAG, "Created Place Item with type: " + type);
-            Place place = new Place(mTextItemAddress, type, latLng);
-            mPlaces.add(place);
+            if (type != TYPE_NONE) {
+                Log.i(TAG, "Created Place Item with type: " + type);
+                Place place = new Place(placeInfo, type, latLng);
+                mPlaces.add(place);
+            }
+//            (type == TYPE_MEDIAT_POIN || type == TYPE_LAST_POIN) &&
 
         }
 
@@ -227,10 +276,9 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mHeaderAdapter.setOnItemClickListener(new HeaderAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View v, int position) {
-                Log.i(TAG, "On Item Click: possition: " + position);
                 String address = mPlaces.get(position - 1).getAddress();
                 Log.i(TAG, "HeaderAdapter On Item Click: Move to possition for address " + mPlaces.get(position - 1).getAddress());
-                moveToLocation(mPlaces.get(position - 1).getLatLng(), true);
+//                moveToLocation(mPlaces.get(position - 1).getLatLng(), true);
 //                mHeaderAdapter.deleteItem(position);
                 Toast.makeText(TheApp.getAppContext(), address, Toast.LENGTH_SHORT).show();
             }
@@ -246,12 +294,15 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
-
+// MapWrapperLayout initialization
+        // 39 - default marker height
+        // 20 - offset between the default InfoWindow bottom edge and it's content bottom edge
+//        mapWrapperLayout.init(mMap, getPixelsFromDp(TheApp.getAppContext(), 39 + 20));
         Activity activity = getActivity();
         Log.i(TAG, "onMapReady: Check if we were successful in obtaining the map");
 
         if (mMap != null) {
-            Toast.makeText(TheApp.getAppContext(),"Wait, Map is ready....", Toast.LENGTH_SHORT).show();
+            Toast.makeText(TheApp.getAppContext(), "Wait, Map is ready....", Toast.LENGTH_SHORT).show();
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             if (ContextCompat.checkSelfPermission(activity,
                     Manifest.permission.ACCESS_FINE_LOCATION)
@@ -322,7 +373,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         initMapMarkerOptions(latLng);
     }
 
-    private void initMapMarkerOptions(LatLng latLng) {
+    private void initMapMarkerOptions(final LatLng latLng) {
         final Address address = getPlaceInfo(latLng);
         String addInfo = null;
         String addressLine = "";
@@ -333,7 +384,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 //            Log.i(TAG, "Address line for search coordinats: " + "\n" + addressLine);
         } else {
 
-            Toast.makeText(TheApp.getAppContext(),"Could not get Adderss", Toast.LENGTH_SHORT).show();
+            Toast.makeText(TheApp.getAppContext(), "Could not get Adderss", Toast.LENGTH_SHORT).show();
         }
 
         if (mPlaceMarkerA != null) {
@@ -343,9 +394,34 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             }
         } else {
             mPlaceMarkerA = new MarkerPlace(TheApp.getAppContext(), BitmapDescriptorFactory.HUE_MAGENTA, latLng, mMap,
-                    addInfo);
-            mPlaceMarkerA.initMarkerPoint();
+                    addInfo, null);
+
+            composePlaceRecycleView(latLng, addInfo);
+
+            mPlaceMarkerA.setOnItemClickListener(new MarkerPlace.OnItemClickListener() {
+                @Override
+                public void onInfoFrameClick(View infoFrame, Button buttonView) {
+                    MarkerPlaceInfoFrame frame = (MarkerPlaceInfoFrame) infoFrame.getRootView();
+                    if (frame.isClickable()) {
+                        if (mPlaceMarkerA.getAddress() != null) {
+                            Log.i(TAG, "Added new Place in List! address: " + mPlaceMarkerA.getAddress());
+//                            buttonView.setTextColor(Color.TRANSPARENT);
+                            frame.setClickable(false);
+                            frame.getButtonView().setTextColor(Color.TRANSPARENT);
+
+                            composePlaceRecycleView(mPlaceMarkerA.getLatLng(), mPlaceMarkerA.getAddress());
+                        }
+                    }
+                }
+            });
+
         }
+
+//        if (addInfo != null) {
+
+//        }
+
+
 //        if (mPlaceMarkerB != null) {
 //
 //            if (mPlaceMarkerB.isFlag()) {
@@ -516,13 +592,13 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        if (!geocodeMatches.isEmpty()) {
-            Address1 = geocodeMatches.get(0).getAddressLine(0);
-            Address2 = geocodeMatches.get(0).getAddressLine(1);
-            State = geocodeMatches.get(0).getAdminArea();
-            Zipcode = geocodeMatches.get(0).getPostalCode();
-            Country = geocodeMatches.get(0).getCountryName();
+        if (geocodeMatches != null) {
+            if (!geocodeMatches.isEmpty()) {
+                Address1 = geocodeMatches.get(0).getAddressLine(0);
+                Address2 = geocodeMatches.get(0).getAddressLine(1);
+                State = geocodeMatches.get(0).getAdminArea();
+                Zipcode = geocodeMatches.get(0).getPostalCode();
+                Country = geocodeMatches.get(0).getCountryName();
 
 //            Log.i(TAG, "Address1: " + Address1);
 //            Log.i(TAG, "Address2: " + Address2);
@@ -531,7 +607,8 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 //            Log.i(TAG, "Country: " + Country);
 
 
-            return geocodeMatches.get(0);
+                return geocodeMatches.get(0);
+            }
         }
         return null;
     }
@@ -557,7 +634,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onLocationSucceeded");
         Toast.makeText(TheApp.getAppContext(), "Location gets", Toast.LENGTH_SHORT).show();
         showProgress(false);
-        composePlaceRecycleView();
+
         mLocationModel.stopGetLocation();
 
 
@@ -604,5 +681,10 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         // Disconnecting the client invalidates it.
         mGoogleApiClient.disconnect();
         super.onStop();
+    }
+
+    public static int getPixelsFromDp(Context context, float dp) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dp * scale + 0.5f);
     }
 }

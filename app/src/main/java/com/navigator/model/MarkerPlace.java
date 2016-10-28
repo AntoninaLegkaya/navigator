@@ -4,15 +4,21 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.navigator.MainActivity;
+import com.navigator.R;
 import com.navigator.TheApp;
 import com.navigator.customElements.MarkerPlaceInfoFrame;
+import com.navigator.layout.MapWrapperLayout;
+import com.navigator.listaners.OnInfoWindowElemTouchListener;
 
 /**
  * Created by tony on 24.10.16.
@@ -28,15 +34,37 @@ public class MarkerPlace {
     private Context context;
     private float icon;
     private boolean flag = true;
+    private MapWrapperLayout mapWrapperLayout;
+
+    public MarkerPlaceInfoFrame getInfoFrame() {
+        return infoFrame;
+    }
+
     private MarkerPlaceInfoFrame infoFrame;
 
-    public MarkerPlace(Context context,float icon, LatLng latLng, GoogleMap map, String address) {
+    public static MarkerPlace.OnItemClickListener listener;
 
-        this.context=context;
+    public void setOnItemClickListener(MarkerPlace.OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
+    public interface OnItemClickListener {
+        void onInfoFrameClick(View infoFrame, Button buttonView);
+    }
+
+
+    private OnInfoWindowElemTouchListener infoButtonListener;
+
+    public MarkerPlace(Context context, float icon, LatLng latLng, GoogleMap map, String address, MapWrapperLayout mapWrapperLayout) {
+
+        this.context = context;
         this.icon = icon;
         this.latLng = latLng;
         this.mMap = map;
         this.address = address;
+//        this.mapWrapperLayout = mapWrapperLayout;
+        initMarkerPoint();
+
     }
 
 
@@ -53,11 +81,15 @@ public class MarkerPlace {
                     if (address != null) {
 
                         infoFrame.setInforPlace(address);
+                        infoFrame.getButtonView().setClickable(true);
+                        infoFrame.getButtonView().setTextColor(Color.GREEN);
                     } else {
                         infoFrame.setInforPlace("Could not get address");
-
+                        infoFrame.getButtonView().setClickable(false);
+                        infoFrame.getButtonView().setTextColor(Color.TRANSPARENT);
                     }
                     infoFrame.setColor(Color.BLACK);
+//                    mapWrapperLayout.setMarkerWithInfoWindow(marker, infoFrame);
                     return infoFrame;
 
                 } else
@@ -75,20 +107,28 @@ public class MarkerPlace {
                 }
                 return tv;
             }
+
+
         };
+
         final GoogleMap.OnInfoWindowClickListener onInfoWindowClickListener = new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
                 MarkerPlaceInfoFrame infoFrame = (MarkerPlaceInfoFrame) infoWindowAdapter.getInfoWindow(marker);
                 if (marker.getId().equals(point.getId())) {
-                    Log.i(TAG, "Point id: " + point.getId() + " Clicked InfoWindow");
 
-
+                    if (MarkerPlace.listener != null) {
+                        Log.i(TAG, "Click on onInfoWindow !");
+                        infoFrame.getButtonView().setTextColor(Color.RED);
+                        MarkerPlace.listener.onInfoFrameClick(infoFrame, infoFrame.getButtonView());
+                    }
 
                 }
 
             }
         };
+
+
         Log.i(TAG, "initMarkerPoint: Set Listener on infoWindow");
         mMap.setInfoWindowAdapter(infoWindowAdapter);
         mMap.setOnInfoWindowClickListener(onInfoWindowClickListener);
@@ -112,6 +152,8 @@ public class MarkerPlace {
             infoFrame.setInforPlace(address);
         } else {
             infoFrame.setInforPlace("Could not get address");
+            infoFrame.getButtonView().setClickable(false);
+            infoFrame.getButtonView().setTextColor(Color.TRANSPARENT);
 
         }
         infoFrame.setColor(Color.BLACK);
@@ -137,6 +179,10 @@ public class MarkerPlace {
 
     public boolean isFlag() {
         return flag;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     public void setFlag(boolean flag) {

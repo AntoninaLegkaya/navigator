@@ -29,7 +29,8 @@ android:layout_height="fill_parent">
             android:layout_width="match_parent"
             android:layout_alignTop="@+id/rv"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="179dp">
+            android:layout_marginTop="179dp"
+            android:visibility="invisible">
         </ProgressBar>
     </FrameLayout>
 

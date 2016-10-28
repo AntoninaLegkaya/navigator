@@ -17,7 +17,6 @@ import com.navigator.MainActivity;
 import com.navigator.R;
 import com.navigator.TheApp;
 import com.navigator.customElements.MarkerPlaceInfoFrame;
-import com.navigator.layout.MapWrapperLayout;
 import com.navigator.listaners.OnInfoWindowElemTouchListener;
 
 /**
@@ -34,7 +33,6 @@ public class MarkerPlace {
     private Context context;
     private float icon;
     private boolean flag = true;
-    private MapWrapperLayout mapWrapperLayout;
 
     public MarkerPlaceInfoFrame getInfoFrame() {
         return infoFrame;
@@ -55,14 +53,13 @@ public class MarkerPlace {
 
     private OnInfoWindowElemTouchListener infoButtonListener;
 
-    public MarkerPlace(Context context, float icon, LatLng latLng, GoogleMap map, String address, MapWrapperLayout mapWrapperLayout) {
+    public MarkerPlace(Context context, float icon, LatLng latLng, GoogleMap map, String address) {
 
         this.context = context;
         this.icon = icon;
         this.latLng = latLng;
         this.mMap = map;
         this.address = address;
-//        this.mapWrapperLayout = mapWrapperLayout;
         initMarkerPoint();
 
     }
@@ -172,11 +169,6 @@ public class MarkerPlace {
         return latLng;
     }
 
-    public GoogleMap getmMap() {
-        return mMap;
-    }
-
-
     public boolean isFlag() {
         return flag;
     }
@@ -187,5 +179,9 @@ public class MarkerPlace {
 
     public void setFlag(boolean flag) {
         this.flag = flag;
+    }
+
+    public GoogleMap getmMap() {
+        return mMap;
     }
 }

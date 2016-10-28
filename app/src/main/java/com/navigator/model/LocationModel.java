@@ -32,6 +32,10 @@ public class LocationModel {
 
     }
 
+    public ActionObservable getmObservable() {
+        return mObservable;
+    }
+
     public double getLongitude() {
         return longitude;
     }
@@ -84,10 +88,12 @@ public class LocationModel {
         if (mIsWorking) {
             locationTask.cancel(true);
             mIsWorking = false;
+
         }
     }
 
     public void registerObserver(final Observer observer) {
+
         mObservable.registerObserver(observer);
         if (mIsWorking) {
             observer.onStarted(this);

@@ -58,7 +58,6 @@ import com.google.android.gms.maps.model.LatLng;
 
 import com.navigator.customElements.MarkerPlaceInfoFrame;
 import com.navigator.interfaces.Observer;
-import com.navigator.layout.MapWrapperLayout;
 import com.navigator.model.LocationModel;
 import com.navigator.model.MarkerPlace;
 import com.navigator.model.Place;
@@ -89,15 +88,12 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     View mTransparentView;
     @Bind(R.id.whiteSpaceView)
     View mWhiteSpaceView;
-    @Bind(R.id.progressInd)
-    ProgressBar mProgress;
+
 
     private HeaderAdapter mHeaderAdapter;
     private LatLng mLocation;
     private MarkerPlace mPlaceMarkerA;
     private MarkerPlace mPlaceMarkerB;
-
-
     private SupportMapFragment mMapFragment;
     private GoogleMap mMap;
     private boolean mIsNeedLocationUpdate = true;
@@ -105,11 +101,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     private LocationRequest mLocationRequest;
     private LocationModel mLocationModel;
 
-    public void setMapWrapperLayout(MapWrapperLayout mapWrapperLayout) {
-        this.mapWrapperLayout = mapWrapperLayout;
-    }
 
-    private MapWrapperLayout mapWrapperLayout;
 
     private ArrayList<Place> mPlaces = new ArrayList<Place>();
 
@@ -118,11 +110,10 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     }
 
 
-    public static MainFragment newInstance(LatLng location, MapWrapperLayout mapWrapperLayout) {
+    public static MainFragment newInstance(LatLng location) {
         Log.i(TAG, "Create new Instance Main Fragment");
 
         MainFragment f = new MainFragment();
-//        f.setMapWrapperLayout(mapWrapperLayout);
         Bundle args = new Bundle();
         args.putParcelable(ARG_LOCATION, location);
         f.setArguments(args);
@@ -146,10 +137,10 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         Log.i(TAG, "onCreateView: add sliding Panel to fragment_main");
         mSlidingUpPanelLayout = ButterKnife.findById(rootView, R.id.slidingLayout);
         mSlidingUpPanelLayout.setEnableDragViewTouchEvents(true);
-        mProgress = ButterKnife.findById(rootView, R.id.progressInd);
+//        mProgress = ButterKnife.findById(rootView, R.id.progressInd);
 
 
-        int mapHeight = 240;
+        int mapHeight = 250;
         //getResources().getDimensionPixelSize(R.dimen.map_height);
 
         Log.i(TAG, "onCreateView: Set height sliding Panel: " + mapHeight);
@@ -206,10 +197,6 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private void composePlaceRecycleView(LatLng latLng, String placeInfo) {
         Log.i(TAG, "composePlaceRecycleView: Compose test data for RecycleView");
-
-//        final LatLng latLng = new LatLng(mLocationModel.getLatitude(), mLocationModel.getLongitude());
-//        final Address placeInfo = getPlaceInfo(latLng);
-//        String mTextItemAddress = "Could not get Address";
 
 
         if (mPlaces.isEmpty()) {
@@ -376,6 +363,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         mLocationModel = LocationModel.getInstanceLocationModel();
         if (mLocationModel != null) {
             Log.i(TAG, "Register Observer for get Location");
+
             mLocationModel.registerObserver(this);
             Log.i(TAG, "Start get Location");
             mLocationModel.startGetLocation(getActivity(), lm);
@@ -420,7 +408,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
             }
         } else {
             mPlaceMarkerA = new MarkerPlace(TheApp.getAppContext(), BitmapDescriptorFactory.HUE_MAGENTA, latLng, mMap,
-                    addInfo, null);
+                    addInfo);
 
             composePlaceRecycleView(latLng, addInfo);
 
@@ -626,12 +614,6 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
                 Zipcode = geocodeMatches.get(0).getPostalCode();
                 Country = geocodeMatches.get(0).getCountryName();
 
-//            Log.i(TAG, "Address1: " + Address1);
-//            Log.i(TAG, "Address2: " + Address2);
-//            Log.i(TAG, "State: " + State);
-//            Log.i(TAG, "Zipcode: " + Zipcode);
-//            Log.i(TAG, "Country: " + Country);
-
 
                 return geocodeMatches.get(0);
             }
@@ -641,25 +623,25 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 
     private void showProgress(final boolean show) {
 
-        mProgress = (ProgressBar) getActivity().findViewById(R.id.progressInd);
-        if (mProgress != null) {
-            mProgress.setVisibility(show ? View.VISIBLE : View.GONE);
-        } else {
-
-            Log.i(TAG, "showProgress: fail");
-        }
+//        mProgress = (ProgressBar) getActivity().findViewById(R.id.progressInd);
+//        if (mProgress != null) {
+//            mProgress.setVisibility(show ? View.VISIBLE : View.GONE);
+//        } else {
+//
+//            Log.i(TAG, "showProgress: fail");
+//        }
     }
 
     @Override
     public void onStarted(Object model) {
-        showProgress(true);
+//        showProgress(true);
     }
 
     @Override
     public void onSucceeded(Object model) {
         Log.i(TAG, "onLocationSucceeded");
         Toast.makeText(TheApp.getAppContext(), "Location gets", Toast.LENGTH_SHORT).show();
-        showProgress(false);
+//        showProgress(false);
 
         mLocationModel.stopGetLocation();
 
@@ -669,7 +651,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     @Override
     public void onFailed(Object model) {
         Log.i(TAG, "onLocationFailed");
-        showProgress(false);
+//        showProgress(false);
         Toast.makeText(TheApp.getAppContext(), "Could not get location. Start task again!", Toast.LENGTH_SHORT).show();
 
     }
@@ -706,6 +688,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
     public void onStop() {
         // Disconnecting the client invalidates it.
         mGoogleApiClient.disconnect();
+        mLocationModel.getmObservable().unregisterAll();
         super.onStop();
     }
 

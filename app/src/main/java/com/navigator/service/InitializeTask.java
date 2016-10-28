@@ -1,19 +1,12 @@
 package com.navigator.service;
 
-import android.app.Activity;
-import android.content.Context;
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentTransaction;
-import android.util.Log;
-import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.navigator.MainActivity;
 import com.navigator.MainFragment;
 import com.navigator.R;
-import com.navigator.TheApp;
-import com.navigator.layout.MapWrapperLayout;
+
 
 /**
  * Created by tony on 27.10.16.
@@ -21,17 +14,17 @@ import com.navigator.layout.MapWrapperLayout;
 
 public class InitializeTask extends AsyncTask<Void, Void, MainFragment> {
     private MainActivity context;
-    private  MapWrapperLayout mapWrapperLayout;
 
-    public InitializeTask(MainActivity context, MapWrapperLayout mapWrapperLayout) {
+
+    public InitializeTask(MainActivity context) {
         this.context = context;
-//        this.mapWrapperLayout=mapWrapperLayout;
+
     }
 
     @Override
     protected MainFragment doInBackground(Void... params) {
 
-        final MainFragment fragment = MainFragment.newInstance(null,mapWrapperLayout);
+        final MainFragment fragment = MainFragment.newInstance(null);
         return fragment;
     }
 

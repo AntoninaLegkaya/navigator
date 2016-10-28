@@ -211,6 +211,7 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
 //        final Address placeInfo = getPlaceInfo(latLng);
 //        String mTextItemAddress = "Could not get Address";
 
+
         if (mPlaces.isEmpty()) {
             if (placeInfo == null) {
                 placeInfo = "Откуда...";
@@ -220,53 +221,78 @@ public class MainFragment extends Fragment implements Observer, OnMapReadyCallba
         } else {
 
             int type = TYPE_NONE;
+
+            boolean mainTypePointPresent = false;
+            Log.i(TAG, "Check List item for type MAIN POINT!");
             for (Place pl : mPlaces) {
-                switch (pl.getType()) {
-                    case TYPE_MAIN_POINT: {
-                        Log.i(TAG, "Find MAIN POINT");
-                        if (pl.getAddress() == "Откуда..." && placeInfo != null) {
-                            type = TYPE_MAIN_POINT;
-                            Place place = new Place(placeInfo, type, latLng);
-                            mPlaces.remove(pl);
-                            mPlaces.add(0, place);
-                            type = TYPE_NONE;
-                            Log.i(TAG, "Update MAIN POINT");
-                            break;
-                        }
-                        Log.i(TAG, "Change MAIN POINT type --->TYPE LAST POIN ");
-                        type = TYPE_LAST_POIN;
-                        if (placeInfo == null) {
-                            placeInfo = "Куда...";
-                        }
+                if (pl.getType() == TYPE_MAIN_POINT) {
+                    Log.i(TAG, " MAIN POINT Finded!");
+                    mainTypePointPresent = true;
 
-                        break;
-                    }
-                    case TYPE_LAST_POIN: {
-                        Log.i(TAG, "Find LAST POINT");
+                }
 
-                        if (pl.getAddress() == "Kуда..." && placeInfo != null) {
+            }
+
+            if (mainTypePointPresent) {
+
+                for (Place pl : mPlaces) {
+                    switch (pl.getType()) {
+                        case TYPE_MAIN_POINT: {
+                            Log.i(TAG, "Find MAIN POINT");
+                            if (pl.getAddress() == "Откуда..." && placeInfo != null) {
+                                type = TYPE_MAIN_POINT;
+                                Place place = new Place(placeInfo, type, latLng);
+                                mPlaces.remove(pl);
+                                mPlaces.add(0, place);
+                                type = TYPE_NONE;
+                                Log.i(TAG, "Update MAIN POINT");
+                                break;
+                            }
+                            Log.i(TAG, "Change MAIN POINT type --->TYPE LAST POIN ");
                             type = TYPE_LAST_POIN;
-                            Place place = new Place(placeInfo, type, latLng);
-                            mPlaces.remove(pl);
-                            mPlaces.add(mPlaces.size() - 1, place);
-                            type = TYPE_NONE;
+                            if (placeInfo == null) {
+                                placeInfo = "Куда...";
+                            }
+
                             break;
                         }
-                        Log.i(TAG, "Change LAST POINT type --->TYPE MEDIAT POIN ");
-                        type = TYPE_MEDIAT_POIN;
-                        if (placeInfo == null) {
-                            placeInfo = "Could not get Address";
-                        }
+                        case TYPE_LAST_POIN: {
+                            Log.i(TAG, "Find LAST POINT");
 
+                            if (pl.getAddress() == "Kуда..." && placeInfo != null) {
+                                type = TYPE_LAST_POIN;
+                                Place place = new Place(placeInfo, type, latLng);
+                                mPlaces.remove(pl);
+                                mPlaces.add(mPlaces.size() - 1, place);
+                                type = TYPE_NONE;
+                                break;
+                            }
+                            Log.i(TAG, "Change LAST POINT type --->TYPE MEDIAT POIN ");
+                            type = TYPE_MEDIAT_POIN;
+                            if (placeInfo == null) {
+                                placeInfo = "Could not get Address";
+                            }
+
+                        }
                     }
                 }
+
+
+                if (type != TYPE_NONE) {
+                    Log.i(TAG, "Created Place Item with type: " + type);
+                    Place place = new Place(placeInfo, type, latLng);
+                    mPlaces.add(place);
+                }
+            } else {
+
+                if (placeInfo == null) {
+                    placeInfo = "Откуда...";
+                }
+                Place place = new Place(placeInfo, TYPE_MAIN_POINT, latLng);
+                mPlaces.add(0, place);
+
             }
-            if (type != TYPE_NONE) {
-                Log.i(TAG, "Created Place Item with type: " + type);
-                Place place = new Place(placeInfo, type, latLng);
-                mPlaces.add(place);
-            }
-//            (type == TYPE_MEDIAT_POIN || type == TYPE_LAST_POIN) &&
+
 
         }
 
